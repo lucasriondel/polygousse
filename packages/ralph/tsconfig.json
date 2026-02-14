@@ -1,0 +1,7 @@
+{
+	"extends": "@polygousse/typescript-config/node.json",
+	"compilerOptions": {
+		"noEmit": true
+	},
+	"include": ["src"]
+}

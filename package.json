@@ -1,0 +1,20 @@
+{
+  "name": "@polygousse/root",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "packageManager": "bun@1.3.4",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "clean": "turbo clean",
+    "lint": "turbo lint",
+    "format": "turbo format",
+    "test": "turbo test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,35 @@
+{
+	"name": "@polygousse/api",
+	"private": true,
+	"version": "0.0.0",
+	"scripts": {
+		"dev": "concurrently \"bun --hot src/index.ts\" \"tsx watch src/pty-bridge.ts\"",
+		"build": "bun build src/index.ts --outdir dist --target bun",
+		"typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.pty-bridge.json",
+		"clean": "rm -rf dist .turbo",
+		"lint": "biome check .",
+		"format": "biome check --write .",
+		"test": "bun test",
+		"test:e2e": "bun test test/e2e/",
+		"test:unit": "bun test test/unit/"
+	},
+	"dependencies": {
+		"@fastify/cors": "^10.0.0",
+		"@fastify/websocket": "^11.0.0",
+		"@polygousse/database": "workspace:*",
+		"@polygousse/types": "workspace:*",
+		"@sinclair/typebox": "^0.34.48",
+		"fastify": "^5.2.0",
+		"node-pty": "^1.2.0-beta.11",
+		"ws": "^8.18.0"
+	},
+	"devDependencies": {
+		"@polygousse/fake-claude-cli": "workspace:*",
+		"@polygousse/typescript-config": "workspace:*",
+		"@types/node": "^22.0.0",
+		"@types/ws": "^8.5.0",
+		"bun-types": "^1.1.0",
+		"concurrently": "^9.1.0",
+		"tsx": "^4.19.0"
+	}
+}

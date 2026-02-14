@@ -1,0 +1,9 @@
+{
+	"extends": "@polygousse/typescript-config/node.json",
+	"compilerOptions": {
+		"composite": true,
+		"outDir": "dist",
+		"rootDir": "src"
+	},
+	"include": ["src"]
+}

@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/database" },
+    { "path": "packages/cli" },
+    { "path": "packages/fake-claude-cli" },
+    { "path": "apps/api" },
+    { "path": "apps/web" },
+    { "path": "packages/mcp-server" },
+    { "path": "packages/ralph" }
+  ]
+}
