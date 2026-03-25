@@ -29,11 +29,16 @@ export interface HookPayload {
 
 class OrchestratorBus extends EventEmitter {}
 
-export const orchestratorBus = new OrchestratorBus();
+// Persist across bun --hot reloads so in-flight listeners survive module re-evaluation
+const g = globalThis as unknown as {
+	__orchestratorBus?: OrchestratorBus;
+	__orchestrators?: Map<string, OrchestratorState>;
+};
+export const orchestratorBus = (g.__orchestratorBus ??= new OrchestratorBus());
 
 // ── Orchestrator state registry ──────────────────────────────────────────
 
-export const orchestrators = new Map<string, OrchestratorState>();
+export const orchestrators = (g.__orchestrators ??= new Map<string, OrchestratorState>());
 
 export function getOrchestratorState(terminalSessionId: string) {
 	return orchestrators.get(terminalSessionId) ?? null;
