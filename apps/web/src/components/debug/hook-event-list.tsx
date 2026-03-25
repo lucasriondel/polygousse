@@ -111,8 +111,8 @@ export function HookEventList({
 	togglePause,
 	handleClear,
 	bufferCount,
-	expandedId,
-	setExpandedId,
+	expandedIds,
+	setExpandedIds,
 	listRef,
 	handleScroll,
 	scrollToBottom,
@@ -225,8 +225,15 @@ export function HookEventList({
 							<EventRow
 								key={event.id}
 								event={event}
-								expanded={expandedId === event.id}
-								onToggle={() => setExpandedId(expandedId === event.id ? null : event.id)}
+								expanded={expandedIds.has(event.id)}
+								onToggle={() =>
+									setExpandedIds((prev) => {
+										const next = new Set(prev);
+										if (next.has(event.id)) next.delete(event.id);
+										else next.add(event.id);
+										return next;
+									})
+								}
 								compact={compact}
 								showSessionInfo={showSessionInfo}
 							/>

@@ -48,7 +48,7 @@ export function useSocketDebugEvents() {
 	const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(() => new Set());
 	const [directionFilter, setDirectionFilter] = useState<"all" | "in" | "out">("all");
 	const [paused, setPaused] = useState(false);
-	const [expandedId, setExpandedId] = useState<number | null>(null);
+	const [expandedIds, setExpandedIds] = useState<Set<number>>(() => new Set());
 	const [autoScroll, setAutoScroll] = useState(true);
 	const [showScrollBtn, setShowScrollBtn] = useState(false);
 
@@ -173,8 +173,8 @@ export function useSocketDebugEvents() {
 		hiddenTypes,
 		toggleType,
 		presentTypes,
-		expandedId,
-		setExpandedId,
+		expandedIds,
+		setExpandedIds,
 		directionFilter,
 		setDirectionFilter,
 		listRef,

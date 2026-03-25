@@ -437,8 +437,8 @@ function SocketEventsTab() {
 		hiddenTypes,
 		toggleType,
 		presentTypes,
-		expandedId,
-		setExpandedId,
+		expandedIds,
+		setExpandedIds,
 		directionFilter,
 		setDirectionFilter,
 		listRef,
@@ -566,9 +566,14 @@ function SocketEventsTab() {
 							<SocketMessageBubble
 								key={event.id}
 								event={event}
-								expanded={expandedId === event.id}
+								expanded={expandedIds.has(event.id)}
 								onToggle={() =>
-									setExpandedId(expandedId === event.id ? null : event.id)
+									setExpandedIds((prev) => {
+										const next = new Set(prev);
+										if (next.has(event.id)) next.delete(event.id);
+										else next.add(event.id);
+										return next;
+									})
 								}
 							/>
 						))}

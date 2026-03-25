@@ -36,7 +36,7 @@ export function useSessionDebugEvents(sessionId: string) {
 	const [filter, setFilter] = useState("");
 	const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(() => new Set());
 	const [paused, setPaused] = useState(false);
-	const [expandedId, setExpandedId] = useState<number | null>(null);
+	const [expandedIds, setExpandedIds] = useState<Set<number>>(() => new Set());
 	const [autoScroll, setAutoScroll] = useState(true);
 	const [showScrollBtn, setShowScrollBtn] = useState(false);
 
@@ -248,8 +248,8 @@ export function useSessionDebugEvents(sessionId: string) {
 		hiddenTypes,
 		toggleType,
 		presentTypes,
-		expandedId,
-		setExpandedId,
+		expandedIds,
+		setExpandedIds,
 		listRef,
 		handleScroll,
 		scrollToBottom,

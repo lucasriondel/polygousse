@@ -18,8 +18,8 @@ export interface UseHookEventsReturn {
 	togglePause: () => void;
 	handleClear: () => void;
 	bufferCount: number;
-	expandedId: number | null;
-	setExpandedId: (id: number | null) => void;
+	expandedIds: Set<number>;
+	setExpandedIds: React.Dispatch<React.SetStateAction<Set<number>>>;
 	listRef: React.RefObject<HTMLDivElement | null>;
 	handleScroll: () => void;
 	scrollToBottom: () => void;
@@ -36,7 +36,7 @@ function useHookEventsBase(initialHiddenEvents?: string[]) {
 		() => new Set(initialHiddenEvents ?? ["PreToolUse", "PostToolUse"]),
 	);
 	const [paused, setPaused] = useState(false);
-	const [expandedId, setExpandedId] = useState<number | null>(null);
+	const [expandedIds, setExpandedIds] = useState<Set<number>>(() => new Set());
 	const [autoScroll, setAutoScroll] = useState(true);
 	const [showScrollBtn, setShowScrollBtn] = useState(false);
 
@@ -137,8 +137,8 @@ function useHookEventsBase(initialHiddenEvents?: string[]) {
 		presentEventNames,
 		paused,
 		togglePause,
-		expandedId,
-		setExpandedId,
+		expandedIds,
+		setExpandedIds,
 		listRef,
 		handleScroll,
 		scrollToBottom,
@@ -194,8 +194,8 @@ export function useGlobalHookEvents(): UseHookEventsReturn {
 		togglePause: base.togglePause,
 		handleClear,
 		bufferCount: base.bufferRef.current.length,
-		expandedId: base.expandedId,
-		setExpandedId: base.setExpandedId,
+		expandedIds: base.expandedIds,
+		setExpandedIds: base.setExpandedIds,
 		listRef: base.listRef,
 		handleScroll: base.handleScroll,
 		scrollToBottom: base.scrollToBottom,
@@ -290,8 +290,8 @@ export function useSessionHookEvents(sessionId: string): UseHookEventsReturn {
 		togglePause: base.togglePause,
 		handleClear,
 		bufferCount: base.bufferRef.current.length,
-		expandedId: base.expandedId,
-		setExpandedId: base.setExpandedId,
+		expandedIds: base.expandedIds,
+		setExpandedIds: base.setExpandedIds,
 		listRef: base.listRef,
 		handleScroll: base.handleScroll,
 		scrollToBottom: base.scrollToBottom,
