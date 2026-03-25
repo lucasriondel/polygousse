@@ -414,10 +414,10 @@ registerHandler("session:terminate", async (payload, { log }) => {
 		broadcast({ type: "terminal-session:updated", session: terminalSession });
 	}
 
-	// Detach the task from the terminated session so it returns to the backlog
+	// Detach the task from the terminated session and reset status to todo
 	const task = getTaskBySessionId.get(sessionId);
 	if (task) {
-		const updatedTask = updateTask.get(task.title, task.description, task.status, null, null, task.id);
+		const updatedTask = updateTask.get(task.title, task.description, "todo", null, null, task.id);
 		if (updatedTask) {
 			broadcast({ type: "task:updated", task: updatedTask });
 		}
