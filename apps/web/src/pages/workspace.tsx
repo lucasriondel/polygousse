@@ -7,7 +7,6 @@ import { TaskList } from "@/components/task-list";
 import type { TaskStatus } from "@/hooks/use-tasks";
 import { useWorkspaceTaskManagement } from "@/hooks/use-workspace-task-management";
 import type { Workspace } from "@/hooks/use-workspaces";
-import { useStore } from "@/store";
 
 const statusGroups: { status: TaskStatus; label: string }[] = [
 	{ status: "waiting_for_input", label: "Waiting for Input" },
@@ -27,10 +26,7 @@ export function WorkspacePage({
 }: WorkspacePageProps) {
 	const mgmt = useWorkspaceTaskManagement(workspace);
 
-	const linearTaskLinks = useStore((s) => s.linearTaskLinks);
-	const todoTasks = mgmt.tasks.filter(
-		(t) => t.status === "todo" && !linearTaskLinks.has(t.id),
-	);
+	const todoTasks = mgmt.tasks.filter((t) => t.status === "todo");
 	const ungroupedTodo = todoTasks.filter((t) => t.folder_id === null);
 	const nonTodoGroups = statusGroups
 		.filter((g) => g.status !== "todo")
