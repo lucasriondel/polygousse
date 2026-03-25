@@ -1,4 +1,5 @@
 import type { WsActionMap, WsActionName } from "@polygousse/types";
+import { recordOutgoingEvent } from "@/lib/api-events";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
@@ -84,5 +85,6 @@ export function wsRequest<A extends WsActionName>(
 		});
 
 		wsRef.send(JSON.stringify({ id, action, payload }));
+		recordOutgoingEvent(action, payload);
 	});
 }

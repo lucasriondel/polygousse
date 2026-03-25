@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppSocket } from "@/hooks/use-app-socket";
-import { getNextEventId, type SocketEvent } from "@/lib/api-events";
+import {
+	clearStoredEvents,
+	getNextEventId,
+	getStoredEvents,
+	pushEvent,
+	subscribeToEventStore,
+	type SocketEvent,
+} from "@/lib/api-events";
 
 // ── Constants ──────────────────────────────────────────────────────────
 
@@ -12,6 +19,8 @@ const SOCKET_EVENT_TYPES = [
 	"task:updated",
 	"task:deleted",
 	"task:reordered",
+	"task:attachment:created",
+	"task:attachment:deleted",
 	"folder:created",
 	"folder:updated",
 	"folder:deleted",
@@ -21,12 +30,20 @@ const SOCKET_EVENT_TYPES = [
 	"terminal-session:created",
 	"terminal-session:updated",
 	"hook-event:raw",
+	"ralph-session:created",
+	"ralph-session:updated",
+	"orchestrator:created",
+	"orchestrator:updated",
+	"setting:updated",
+	"setting:deleted",
+	"claude-usage:updated",
+	"linear-task-link:created",
 ];
 
 // ── Hook ───────────────────────────────────────────────────────────────
 
 export function useSocketDebugEvents() {
-	const [events, setEvents] = useState<SocketEvent[]>([]);
+	const [events, setEvents] = useState<SocketEvent[]>(getStoredEvents);
 	const [filter, setFilter] = useState("");
 	const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(() => new Set());
 	const [directionFilter, setDirectionFilter] = useState<"all" | "in" | "out">("all");
@@ -39,6 +56,15 @@ export function useSocketDebugEvents() {
 	const bufferRef = useRef<SocketEvent[]>([]);
 	const listRef = useRef<HTMLDivElement>(null);
 	const { subscribe } = useAppSocket();
+
+	// Sync from module-level store (picks up outgoing events too)
+	useEffect(() => {
+		return subscribeToEventStore(() => {
+			if (!pausedRef.current) {
+				setEvents(getStoredEvents());
+			}
+		});
+	}, []);
 
 	// Subscribe to ALL incoming WS event types
 	useEffect(() => {
@@ -54,7 +80,7 @@ export function useSocketDebugEvents() {
 				if (pausedRef.current) {
 					bufferRef.current.push(event);
 				} else {
-					setEvents((prev) => [...prev, event]);
+					pushEvent(event);
 				}
 			}),
 		);
@@ -90,7 +116,7 @@ export function useSocketDebugEvents() {
 
 	const togglePause = useCallback(() => {
 		if (pausedRef.current) {
-			setEvents((prev) => [...prev, ...bufferRef.current]);
+			for (const ev of bufferRef.current) pushEvent(ev);
 			bufferRef.current = [];
 			pausedRef.current = false;
 			setPaused(false);
@@ -101,7 +127,7 @@ export function useSocketDebugEvents() {
 	}, []);
 
 	const handleClear = useCallback(() => {
-		setEvents([]);
+		clearStoredEvents();
 		bufferRef.current = [];
 	}, []);
 

@@ -61,6 +61,16 @@ const SOCKET_EVENT_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
 	"terminal-session:created": { bg: "bg-purple-500/15", text: "text-purple-500" },
 	"terminal-session:updated": { bg: "bg-purple-500/15", text: "text-purple-500" },
 	"hook-event:raw": { bg: "bg-red-500/15", text: "text-red-400" },
+	"task:attachment:created": { bg: "bg-emerald-500/15", text: "text-emerald-500" },
+	"task:attachment:deleted": { bg: "bg-emerald-500/15", text: "text-emerald-500" },
+	"ralph-session:created": { bg: "bg-orange-500/15", text: "text-orange-500" },
+	"ralph-session:updated": { bg: "bg-orange-500/15", text: "text-orange-500" },
+	"orchestrator:created": { bg: "bg-pink-500/15", text: "text-pink-500" },
+	"orchestrator:updated": { bg: "bg-pink-500/15", text: "text-pink-500" },
+	"setting:updated": { bg: "bg-zinc-500/15", text: "text-zinc-400" },
+	"setting:deleted": { bg: "bg-zinc-500/15", text: "text-zinc-400" },
+	"claude-usage:updated": { bg: "bg-violet-500/15", text: "text-violet-500" },
+	"linear-task-link:created": { bg: "bg-indigo-500/15", text: "text-indigo-500" },
 };
 
 const DIRECTION_COLORS: Record<
