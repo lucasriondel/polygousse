@@ -30,6 +30,7 @@ const STORE_EVENT_TYPES = new Set<string>([
 	"setting:updated",
 	"setting:deleted",
 	"claude-usage:updated",
+	"linear-task-link:created",
 ]);
 
 let listeners = new Map<string, Set<(data: unknown) => void>>();
