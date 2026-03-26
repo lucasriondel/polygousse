@@ -70,6 +70,7 @@ export function RunTaskDialog({ open, onOpenChange, task, workspace, onRun, line
 	const [worktreeEnabled, setWorktreeEnabled] = useState(false);
 	const [branchName, setBranchName] = useState("");
 	const [loading, setLoading] = useState(false);
+	const [worktreeError, setWorktreeError] = useState<string | null>(null);
 
 	const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
 
@@ -103,14 +104,20 @@ export function RunTaskDialog({ open, onOpenChange, task, workspace, onRun, line
 	async function handleRun() {
 		if (!canRun) return;
 		setLoading(true);
+		setWorktreeError(null);
 		try {
 			let worktreePath: string | undefined;
 			if (worktreeEnabled && workspace) {
-				const result = await wsRequest("worktree:create", {
-					workspaceId: workspace.id,
-					branchName: sanitized,
-				});
-				worktreePath = result.path;
+				try {
+					const result = await wsRequest("worktree:create", {
+						workspaceId: workspace.id,
+						branchName: sanitized,
+					});
+					worktreePath = result.path;
+				} catch (err) {
+					setWorktreeError(err instanceof Error ? err.message : String(err));
+					return;
+				}
 			}
 			const options: RunOptions = {
 				permissionMode: dangerouslySkipPermissions ? "dangerously-skip-permissions" : undefined,
@@ -131,6 +138,7 @@ export function RunTaskDialog({ open, onOpenChange, task, workspace, onRun, line
 			setMaxIterations(50);
 			setWorktreeEnabled(false);
 			setBranchName("");
+			setWorktreeError(null);
 		} finally {
 			setLoading(false);
 		}
@@ -307,7 +315,7 @@ export function RunTaskDialog({ open, onOpenChange, task, workspace, onRun, line
 							<Checkbox
 								id="worktree"
 								checked={worktreeEnabled}
-								onCheckedChange={(v) => setWorktreeEnabled(v === true)}
+								onCheckedChange={(v) => { setWorktreeEnabled(v === true); setWorktreeError(null); }}
 							/>
 							<Label htmlFor="worktree" className="flex items-center gap-1.5">
 								<GitBranch className="h-3.5 w-3.5 text-purple-500" />
@@ -320,12 +328,15 @@ export function RunTaskDialog({ open, onOpenChange, task, workspace, onRun, line
 								<Input
 									placeholder="Branch name"
 									value={branchName}
-									onChange={(e) => setBranchName(e.target.value)}
+									onChange={(e) => { setBranchName(e.target.value); setWorktreeError(null); }}
 								/>
 								{sanitized && (
 									<p className="text-xs text-muted-foreground">
 										Branch: <code>{sanitized}</code>
 									</p>
+								)}
+								{worktreeError && (
+									<p className="text-xs text-destructive">{worktreeError}</p>
 								)}
 							</div>
 						)}

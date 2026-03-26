@@ -502,6 +502,19 @@ export interface WorkspaceDeletePayload {
 	id: number;
 }
 
+export interface WorkspaceCheckPathPayload {
+	folder_path: string;
+}
+
+export interface WorkspaceCheckPathResponse {
+	exists: boolean;
+	is_git: boolean;
+}
+
+export interface WorkspaceInitRepoPayload {
+	folder_path: string;
+}
+
 export interface WorktreeCreatePayload {
 	workspaceId: number;
 	branchName: string;
@@ -733,6 +746,8 @@ export interface WsActionMap {
 	"workspace:create": { payload: WorkspaceCreatePayload; response: Workspace };
 	"workspace:update": { payload: WorkspaceUpdatePayload; response: Workspace };
 	"workspace:delete": { payload: WorkspaceDeletePayload; response: void };
+	"workspace:check-path": { payload: WorkspaceCheckPathPayload; response: WorkspaceCheckPathResponse };
+	"workspace:init-repo": { payload: WorkspaceInitRepoPayload; response: void };
 	"worktree:create": { payload: WorktreeCreatePayload; response: WorktreeCreateResponse };
 
 	// Tasks
