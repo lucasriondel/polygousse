@@ -30,8 +30,8 @@ I hope you will find it as useful as I do !
 
 ```
 ┌─────────────┐     WebSocket      ┌──────────────┐
-│   Web UI    │◄──────────────────►│   API Server  │
-│  (React 19) │   (events + RPC)   │  (Fastify 5)  │
+│   Web UI    │◄──────────────────►│   API Server │
+│  (React 19) │   (events + RPC)   │  (Fastify 5) │
 └─────────────┘                    └──────┬───────┘
                                           │
                     ┌─────────────────────┼─────────────────────┐
