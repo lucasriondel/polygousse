@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { readdir, readFile, mkdir, rmdir, unlink } from "node:fs/promises";
+import { readdir, readFile, mkdir, rmdir, stat, unlink } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -172,9 +172,10 @@ registerHandler("worktree:create", async (payload) => {
 
 	const sanitized = branchName
 		.toLowerCase()
-		.replace(/[^a-z0-9-]/g, "-")
+		.replace(/[^a-z0-9/-]/g, "-")
 		.replace(/-+/g, "-")
-		.replace(/^-|-$/g, "");
+		.replace(/\/+/g, "/")
+		.replace(/^[-/]+|[-/]+$/g, "");
 
 	if (!sanitized) throw new Error("Branch name must contain at least one alphanumeric character");
 
