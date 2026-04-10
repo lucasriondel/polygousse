@@ -1,0 +1,1 @@
+Find all git repositories under the current working directory that have uncommitted changes (staged or unstaged). For each repository that has changes, cd into it, stage the relevant files, and commit with an appropriate message. Only commit in repositories where you actually made changes.

@@ -24,7 +24,15 @@ const DEFAULT_PROMPTS: Record<StepName, string> = {
 /**
  * Load a step's default prompt from the prompts/ directory
  */
-function loadStepPrompt(stepName: StepName): string {
+function loadStepPrompt(stepName: StepName, config?: RalphConfig): string {
+	// For the commit step in multi-repo mode, use the multi-repo prompt
+	if (stepName === "commit" && config?.git.multiRepo) {
+		const multiRepoPath = join(PROMPTS_DIR, "commit-multi-repo.txt");
+		if (existsSync(multiRepoPath)) {
+			return readFileSync(multiRepoPath, "utf-8").trim();
+		}
+	}
+
 	const promptPath = join(PROMPTS_DIR, `${stepName}.txt`);
 
 	if (existsSync(promptPath)) {
@@ -46,7 +54,7 @@ function getStepPrompt(stepName: StepName, config: RalphConfig): string | null {
 	}
 
 	// Use override if provided, otherwise load default prompt
-	let prompt = stepConfig.override ?? loadStepPrompt(stepName);
+	let prompt = stepConfig.override ?? loadStepPrompt(stepName, config);
 
 	// Replace completion marker placeholder (applies to both default and overrides)
 	prompt = prompt.replace("{{COMPLETION_MARKER}}", config.completionMarker);

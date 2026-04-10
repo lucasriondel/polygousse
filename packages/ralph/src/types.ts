@@ -21,6 +21,7 @@ export interface GitConfig {
 	branchStrategy: BranchStrategy;
 	branchPrefix: string;
 	returnBranch: boolean;
+	multiRepo: boolean;
 }
 
 export interface RalphConfig {
@@ -68,6 +69,7 @@ export interface CLIOptions {
 	branchStrategy?: BranchStrategy;
 	branchPrefix?: string;
 	returnBranch?: boolean;
+	multiRepo?: boolean;
 	// Optional step name for logging (unused in CLI, for type compatibility)
 	stepName?: string;
 	// Hook CLI flags
@@ -100,6 +102,7 @@ export interface RalphOptions {
 	branchStrategy?: BranchStrategy;
 	branchPrefix?: string;
 	returnBranch?: boolean;
+	multiRepo?: boolean;
 	// Optional step name for logging in multi-step workflows
 	stepName?: string;
 	// Hooks (individual flags or structured object)
@@ -124,6 +127,7 @@ export interface ConfigFile {
 		branchStrategy?: BranchStrategy;
 		branchPrefix?: string;
 		returnBranch?: boolean;
+		multiRepo?: boolean;
 	};
 	steps?: Partial<Record<StepName, StepConfig>>;
 	hooks?: HooksConfig;
@@ -140,6 +144,7 @@ export const DEFAULT_CONFIG: RalphConfig = {
 		branchStrategy: "none",
 		branchPrefix: "ralph/",
 		returnBranch: false,
+		multiRepo: false,
 	},
 	steps: {
 		select: {},

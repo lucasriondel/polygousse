@@ -5,6 +5,7 @@ import { IconPicker } from "@/components/icon-picker";
 import { LinearProjectSelect } from "@/components/linear-project-select";
 import { LinearTeamSelect } from "@/components/linear-team-select";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -35,6 +36,7 @@ export function WorkspaceSettingsPage({ workspace }: { workspace: Workspace }) {
 			return [];
 		}
 	});
+	const [multiRepo, setMultiRepo] = useState(!!workspace.multi_repo);
 	const [saving, setSaving] = useState(false);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [deleting, setDeleting] = useState(false);
@@ -56,7 +58,8 @@ export function WorkspaceSettingsPage({ workspace }: { workspace: Workspace }) {
 		name.trim() !== workspace.name ||
 		icon !== workspace.icon ||
 		linearTeamId !== workspace.linear_team_id ||
-		projectIdsChanged;
+		projectIdsChanged ||
+		multiRepo !== !!workspace.multi_repo;
 
 	function handleTeamChange(teamId: string | null) {
 		setLinearTeamId(teamId);
@@ -77,6 +80,7 @@ export function WorkspaceSettingsPage({ workspace }: { workspace: Workspace }) {
 				icon,
 				linearTeamId,
 				linearProjectIds.length > 0 ? linearProjectIds : null,
+				multiRepo,
 			);
 		} finally {
 			setSaving(false);
@@ -121,6 +125,19 @@ export function WorkspaceSettingsPage({ workspace }: { workspace: Workspace }) {
 					<Label>Folder Path</Label>
 					<p className="text-sm text-muted-foreground font-mono">{workspace.folder_path}</p>
 				</div>
+				<div className="flex items-center gap-2">
+						<Checkbox
+							id="multi-repo"
+							checked={multiRepo}
+							onCheckedChange={(checked) => setMultiRepo(checked === true)}
+						/>
+						<Label htmlFor="multi-repo" className="font-normal">
+							Multi-repo workspace
+						</Label>
+					</div>
+					<p className="text-xs text-muted-foreground -mt-2">
+						Enable if this workspace contains multiple git repositories (not a monorepo). Ralph will commit in each sub-project's repo separately.
+					</p>
 				{isLinearConfigured && (
 					<>
 						<LinearTeamSelect value={linearTeamId} onChange={handleTeamChange} />

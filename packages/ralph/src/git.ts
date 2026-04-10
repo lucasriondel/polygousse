@@ -186,10 +186,15 @@ export async function cleanupBranchContext(
  * Returns error message if validation fails, null if OK
  */
 export async function validateGitState(config: RalphConfig): Promise<string | null> {
-	const { branchStrategy } = config.git;
+	const { branchStrategy, multiRepo } = config.git;
 
 	if (branchStrategy === "none") {
 		return null;
+	}
+
+	// Multi-repo workspaces don't have a git repo at root - branch strategies aren't supported
+	if (multiRepo) {
+		return "Branch strategies are not supported with --multi-repo. Use --branch-strategy none.";
 	}
 
 	// Check if we're in a git repo
