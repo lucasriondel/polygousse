@@ -36,7 +36,7 @@ export function WorkspaceSettingsPage({ workspace }: { workspace: Workspace }) {
 			return [];
 		}
 	});
-	const [multiRepo, setMultiRepo] = useState(!!workspace.multi_repo);
+	const [nestedRepos, setMultiRepo] = useState(!!workspace.nested_repos);
 	const [saving, setSaving] = useState(false);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [deleting, setDeleting] = useState(false);
@@ -59,7 +59,7 @@ export function WorkspaceSettingsPage({ workspace }: { workspace: Workspace }) {
 		icon !== workspace.icon ||
 		linearTeamId !== workspace.linear_team_id ||
 		projectIdsChanged ||
-		multiRepo !== !!workspace.multi_repo;
+		nestedRepos !== !!workspace.nested_repos;
 
 	function handleTeamChange(teamId: string | null) {
 		setLinearTeamId(teamId);
@@ -80,7 +80,7 @@ export function WorkspaceSettingsPage({ workspace }: { workspace: Workspace }) {
 				icon,
 				linearTeamId,
 				linearProjectIds.length > 0 ? linearProjectIds : null,
-				multiRepo,
+				nestedRepos,
 			);
 		} finally {
 			setSaving(false);
@@ -127,16 +127,16 @@ export function WorkspaceSettingsPage({ workspace }: { workspace: Workspace }) {
 				</div>
 				<div className="flex items-center gap-2">
 						<Checkbox
-							id="multi-repo"
-							checked={multiRepo}
+							id="nested-repos"
+							checked={nestedRepos}
 							onCheckedChange={(checked) => setMultiRepo(checked === true)}
 						/>
-						<Label htmlFor="multi-repo" className="font-normal">
-							Multi-repo workspace
+						<Label htmlFor="nested-repos" className="font-normal">
+							Nested repos workspace
 						</Label>
 					</div>
 					<p className="text-xs text-muted-foreground -mt-2">
-						Enable if this workspace contains multiple git repositories (not a monorepo). Ralph will commit in each sub-project's repo separately.
+						Enable if this workspace folder contains nested git repositories. Ralph will commit in each sub-directory's repo separately.
 					</p>
 				{isLinearConfigured && (
 					<>

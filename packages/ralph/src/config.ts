@@ -70,8 +70,8 @@ function mergeConfigFile(config: RalphConfig, fileConfig: ConfigFile): RalphConf
 			merged.git.branchPrefix = fileConfig.git.branchPrefix;
 		if (fileConfig.git.returnBranch !== undefined)
 			merged.git.returnBranch = fileConfig.git.returnBranch;
-		if (fileConfig.git.multiRepo !== undefined)
-			merged.git.multiRepo = fileConfig.git.multiRepo;
+		if (fileConfig.git.nestedRepos !== undefined)
+			merged.git.nestedRepos = fileConfig.git.nestedRepos;
 	}
 
 	// Hooks from config file
@@ -124,7 +124,7 @@ function mergeOptions(config: RalphConfig, options: CLIOptions | RalphOptions): 
 	if (options.branchStrategy !== undefined) merged.git.branchStrategy = options.branchStrategy;
 	if (options.branchPrefix !== undefined) merged.git.branchPrefix = options.branchPrefix;
 	if (options.returnBranch !== undefined) merged.git.returnBranch = options.returnBranch;
-	if (options.multiRepo !== undefined) merged.git.multiRepo = options.multiRepo;
+	if (options.nestedRepos !== undefined) merged.git.nestedRepos = options.nestedRepos;
 
 	// Step overrides (individual --select, --implement, etc.)
 	merged.steps = { ...merged.steps };

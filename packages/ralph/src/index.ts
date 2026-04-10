@@ -49,8 +49,8 @@ async function runSingleInstruction(options: RalphOptions): Promise<RalphResult>
 		console.log(chalk.dim(`  Docker: ${config.docker}`));
 		console.log(chalk.dim(`  Stream: ${config.stream}`));
 		console.log(chalk.dim(`  Completion marker: ${config.completionMarker}`));
-		if (config.git.multiRepo) {
-			console.log(chalk.dim(`  Multi-repo: true`));
+		if (config.git.nestedRepos) {
+			console.log(chalk.dim(`  Nested repos: true`));
 		}
 		if (config.git.branchStrategy !== "none") {
 			console.log(chalk.dim(`  Branch strategy: ${config.git.branchStrategy}`));
@@ -74,8 +74,8 @@ async function runSingleInstruction(options: RalphOptions): Promise<RalphResult>
 		return { success: false, error: gitError };
 	}
 
-	// Initialize branch context (skip for multi-repo workspaces - no root git repo)
-	const branchContext = config.git.multiRepo
+	// Initialize branch context (skip for nested-repos workspaces - no root git repo)
+	const branchContext = config.git.nestedRepos
 		? { originalBranch: "", workingBranch: null }
 		: await initializeBranchContext(config, options.verbose);
 
@@ -130,8 +130,8 @@ async function runSequentialInstructions(instructions: RalphOptions[]): Promise<
 		console.log(chalk.dim(`  Docker: ${primaryConfig.docker}`));
 		console.log(chalk.dim(`  Stream: ${primaryConfig.stream}`));
 		console.log(chalk.dim(`  Completion marker: ${primaryConfig.completionMarker}`));
-		if (primaryConfig.git.multiRepo) {
-			console.log(chalk.dim(`  Multi-repo: true`));
+		if (primaryConfig.git.nestedRepos) {
+			console.log(chalk.dim(`  Nested repos: true`));
 		}
 		if (primaryConfig.git.branchStrategy !== "none") {
 			console.log(chalk.dim(`  Branch strategy: ${primaryConfig.git.branchStrategy}`));
@@ -155,8 +155,8 @@ async function runSequentialInstructions(instructions: RalphOptions[]): Promise<
 		return { success: false, error: gitError };
 	}
 
-	// Initialize branch context (skip for multi-repo workspaces - no root git repo)
-	const branchContext = primaryConfig.git.multiRepo
+	// Initialize branch context (skip for nested-repos workspaces - no root git repo)
+	const branchContext = primaryConfig.git.nestedRepos
 		? { originalBranch: "", workingBranch: null }
 		: await initializeBranchContext(primaryConfig, verbose);
 

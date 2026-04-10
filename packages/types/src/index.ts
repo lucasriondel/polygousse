@@ -23,7 +23,7 @@ export interface Workspace {
 	parent_workspace_id: number | null;
 	linear_team_id: string | null;
 	linear_project_ids: string | null;
-	multi_repo: number;
+	nested_repos: number;
 	created_at: string;
 }
 
@@ -488,7 +488,7 @@ export interface WorkspaceCreatePayload {
 	icon?: string | null;
 	linear_team_id?: string | null;
 	linear_project_ids?: string[] | null;
-	multi_repo?: boolean;
+	nested_repos?: boolean;
 }
 
 export interface WorkspaceUpdatePayload {
@@ -498,7 +498,7 @@ export interface WorkspaceUpdatePayload {
 	icon?: string | null;
 	linear_team_id?: string | null;
 	linear_project_ids?: string[] | null;
-	multi_repo?: boolean;
+	nested_repos?: boolean;
 }
 
 export interface WorkspaceDeletePayload {

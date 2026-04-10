@@ -151,7 +151,7 @@ function WorkspaceIcon({ workspace }: { workspace: Workspace }) {
 interface AppSidebarProps {
 	workspaces: Workspace[];
 	selectedId: number | null;
-	onCreate: (name: string, folderPath: string, icon?: string | null, linearTeamId?: string | null, linearProjectIds?: string[] | null, multiRepo?: boolean) => Promise<Workspace>;
+	onCreate: (name: string, folderPath: string, icon?: string | null, linearTeamId?: string | null, linearProjectIds?: string[] | null, nestedRepos?: boolean) => Promise<Workspace>;
 	activeSessions: ActiveSessionTask[];
 	inboxCount: number;
 }
@@ -171,8 +171,8 @@ export function AppSidebar({
 	const isInboxPage = location.pathname.startsWith("/inbox");
 	const isTasksPage = location.pathname.startsWith("/tasks");
 	const isSettingsPage = location.pathname.startsWith("/settings");
-	async function handleCreate(name: string, folderPath: string, icon?: string | null, linearTeamId?: string | null, multiRepo?: boolean) {
-		const workspace = await onCreate(name, folderPath, icon, linearTeamId, null, multiRepo);
+	async function handleCreate(name: string, folderPath: string, icon?: string | null, linearTeamId?: string | null, nestedRepos?: boolean) {
+		const workspace = await onCreate(name, folderPath, icon, linearTeamId, null, nestedRepos);
 		await navigate({
 			to: "/workspaces/$workspaceId",
 			params: { workspaceId: String(workspace.id) },

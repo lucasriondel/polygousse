@@ -144,6 +144,13 @@ try {
 	if (!(e instanceof Error && e.message.includes("duplicate column"))) throw e;
 }
 
+// Migration: rename multi_repo to nested_repos
+try {
+	db.exec("ALTER TABLE workspaces RENAME COLUMN multi_repo TO nested_repos");
+} catch (e) {
+	if (!(e instanceof Error && e.message.includes("no such column"))) throw e;
+}
+
 // Migration: add indexes on foreign-key and lookup columns
 db.exec(`
   CREATE INDEX IF NOT EXISTS idx_tasks_session_id ON tasks(session_id);

@@ -53,7 +53,7 @@ export async function startRalphOnly(params: RalphOnlyParams) {
 	);
 
 	// Send the ralph command to tmux
-	const ralphCommand = `ralph --iterations ${maxIterations}${workspace.multi_repo ? " --multi-repo" : ""}`;
+	const ralphCommand = `ralph --iterations ${maxIterations}${workspace.nested_repos ? " --nested-repos" : ""}`;
 	try {
 		await tmuxSendKeys(terminalSessionId, ralphCommand);
 	} catch (err) {

@@ -25,11 +25,11 @@ const DEFAULT_PROMPTS: Record<StepName, string> = {
  * Load a step's default prompt from the prompts/ directory
  */
 function loadStepPrompt(stepName: StepName, config?: RalphConfig): string {
-	// For the commit step in multi-repo mode, use the multi-repo prompt
-	if (stepName === "commit" && config?.git.multiRepo) {
-		const multiRepoPath = join(PROMPTS_DIR, "commit-multi-repo.txt");
-		if (existsSync(multiRepoPath)) {
-			return readFileSync(multiRepoPath, "utf-8").trim();
+	// For the commit step in nested-repos mode, use the nested-repos prompt
+	if (stepName === "commit" && config?.git.nestedRepos) {
+		const nestedReposPath = join(PROMPTS_DIR, "commit-nested-repos.txt");
+		if (existsSync(nestedReposPath)) {
+			return readFileSync(nestedReposPath, "utf-8").trim();
 		}
 	}
 

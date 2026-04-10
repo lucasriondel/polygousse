@@ -11,11 +11,11 @@ export const getWorkspaceById = db.prepare<Workspace, [number]>(
 );
 
 export const createWorkspace = db.prepare<Workspace, [string, string, string | null, string | null, string | null, number]>(
-	"INSERT INTO workspaces (name, folder_path, icon, linear_team_id, linear_project_ids, multi_repo) VALUES (?, ?, ?, ?, ?, ?) RETURNING *",
+	"INSERT INTO workspaces (name, folder_path, icon, linear_team_id, linear_project_ids, nested_repos) VALUES (?, ?, ?, ?, ?, ?) RETURNING *",
 );
 
 export const updateWorkspace = db.prepare<Workspace, [string, string, string | null, string | null, string | null, number, number]>(
-	"UPDATE workspaces SET name = ?, folder_path = ?, icon = ?, linear_team_id = ?, linear_project_ids = ?, multi_repo = ? WHERE id = ? RETURNING *",
+	"UPDATE workspaces SET name = ?, folder_path = ?, icon = ?, linear_team_id = ?, linear_project_ids = ?, nested_repos = ? WHERE id = ? RETURNING *",
 );
 
 export const deleteWorkspace = db.prepare("DELETE FROM workspaces WHERE id = ?");
