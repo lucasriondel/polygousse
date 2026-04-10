@@ -84,8 +84,15 @@ export async function initializeBranchContext(
 	const { branchStrategy, branchPrefix } = config.git;
 
 	if (branchStrategy === "none") {
+		// No branch management needed — don't require a git repo
+		let originalBranch = "";
+		try {
+			originalBranch = await getCurrentBranch();
+		} catch {
+			// Not in a git repo, that's fine for "none" strategy
+		}
 		return {
-			originalBranch: await getCurrentBranch(),
+			originalBranch,
 			workingBranch: null,
 		};
 	}
