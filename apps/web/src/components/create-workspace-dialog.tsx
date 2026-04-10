@@ -16,12 +16,13 @@ import { useStore } from "@/store";
 import { selectIsLinearConfigured } from "@/store/selectors";
 import type { BrowseResult } from "@polygousse/types";
 import { AlertTriangle, ChevronUp, Folder, FolderOpen } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
 
 interface CreateWorkspaceDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	onCreate: (name: string, folderPath: string, icon?: string | null, linearTeamId?: string | null) => Promise<Workspace>;
+	onCreate: (name: string, folderPath: string, icon?: string | null, linearTeamId?: string | null, multiRepo?: boolean) => Promise<Workspace>;
 }
 
 export function CreateWorkspaceDialog({
@@ -33,6 +34,7 @@ export function CreateWorkspaceDialog({
 	const [icon, setIcon] = useState<string | null>(null);
 	const [folderPath, setFolderPath] = useState("");
 	const [linearTeamId, setLinearTeamId] = useState<string | null>(null);
+	const [multiRepo, setMultiRepo] = useState(false);
 	const [browsing, setBrowsing] = useState(false);
 	const [browseData, setBrowseData] = useState<BrowseResult | null>(null);
 	const [browseLoading, setBrowseLoading] = useState(false);
@@ -63,11 +65,12 @@ export function CreateWorkspaceDialog({
 	async function finishCreate() {
 		setSubmitting(true);
 		try {
-			await onCreate(name.trim(), folderPath.trim(), icon, linearTeamId);
+			await onCreate(name.trim(), folderPath.trim(), icon, linearTeamId, multiRepo);
 			setName("");
 			setIcon(null);
 			setFolderPath("");
 			setLinearTeamId(null);
+			setMultiRepo(false);
 			setBrowsing(false);
 			setBrowseData(null);
 			setConfirmInit(false);
@@ -166,6 +169,22 @@ export function CreateWorkspaceDialog({
 									<FolderOpen className="h-4 w-4" />
 								</Button>
 							</div>
+						</div>
+
+						<div className="space-y-1">
+							<div className="flex items-center gap-2">
+								<Checkbox
+									id="multi-repo"
+									checked={multiRepo}
+									onCheckedChange={(checked) => setMultiRepo(checked === true)}
+								/>
+								<Label htmlFor="multi-repo" className="font-normal">
+									Multi-repo workspace
+								</Label>
+							</div>
+							<p className="text-xs text-muted-foreground ml-6">
+								Enable if this workspace contains multiple git repositories (not a monorepo). Ralph will commit in each sub-project's repo separately.
+							</p>
 						</div>
 
 						{isLinearConfigured && (
