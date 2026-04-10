@@ -15,13 +15,14 @@ import { wsRequest } from "@/lib/ws-client";
 import { useStore } from "@/store";
 import { selectIsLinearConfigured } from "@/store/selectors";
 import type { BrowseResult } from "@polygousse/types";
-import { ChevronUp, Folder, FolderOpen } from "lucide-react";
+import { AlertTriangle, ChevronUp, Folder, FolderOpen } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
 
 interface CreateWorkspaceDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	onCreate: (name: string, folderPath: string, icon?: string | null, linearTeamId?: string | null) => Promise<Workspace>;
+	onCreate: (name: string, folderPath: string, icon?: string | null, linearTeamId?: string | null, nestedRepos?: boolean) => Promise<Workspace>;
 }
 
 export function CreateWorkspaceDialog({
@@ -33,9 +34,12 @@ export function CreateWorkspaceDialog({
 	const [icon, setIcon] = useState<string | null>(null);
 	const [folderPath, setFolderPath] = useState("");
 	const [linearTeamId, setLinearTeamId] = useState<string | null>(null);
+	const [nestedRepos, setMultiRepo] = useState(false);
 	const [browsing, setBrowsing] = useState(false);
 	const [browseData, setBrowseData] = useState<BrowseResult | null>(null);
 	const [browseLoading, setBrowseLoading] = useState(false);
+	const [confirmInit, setConfirmInit] = useState(false);
+	const [submitting, setSubmitting] = useState(false);
 	const isLinearConfigured = useStore(selectIsLinearConfigured);
 
 	async function browse(path?: string) {
@@ -58,17 +62,48 @@ export function CreateWorkspaceDialog({
 		setBrowsing(false);
 	}
 
+	async function finishCreate() {
+		setSubmitting(true);
+		try {
+			await onCreate(name.trim(), folderPath.trim(), icon, linearTeamId, nestedRepos);
+			setName("");
+			setIcon(null);
+			setFolderPath("");
+			setLinearTeamId(null);
+			setMultiRepo(false);
+			setBrowsing(false);
+			setBrowseData(null);
+			setConfirmInit(false);
+			onOpenChange(false);
+		} finally {
+			setSubmitting(false);
+		}
+	}
+
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		if (!name.trim() || !folderPath.trim()) return;
-		await onCreate(name.trim(), folderPath.trim(), icon, linearTeamId);
-		setName("");
-		setIcon(null);
-		setFolderPath("");
-		setLinearTeamId(null);
-		setBrowsing(false);
-		setBrowseData(null);
-		onOpenChange(false);
+		setSubmitting(true);
+		try {
+			const { exists } = await wsRequest("workspace:check-path", { folder_path: folderPath.trim() });
+			if (!exists) {
+				setConfirmInit(true);
+				return;
+			}
+			await finishCreate();
+		} finally {
+			setSubmitting(false);
+		}
+	}
+
+	async function handleConfirmInit() {
+		setSubmitting(true);
+		try {
+			await wsRequest("workspace:init-repo", { folder_path: folderPath.trim() });
+			await finishCreate();
+		} finally {
+			setSubmitting(false);
+		}
 	}
 
 	return (
@@ -77,100 +112,139 @@ export function CreateWorkspaceDialog({
 				<DialogHeader>
 					<DialogTitle>New Workspace</DialogTitle>
 				</DialogHeader>
-				<form onSubmit={handleSubmit} className="space-y-4">
-					<div className="space-y-2">
-						<Label htmlFor="workspace-name">Name</Label>
-						<div className="flex items-center gap-2">
-							<IconPicker icon={icon} fallback={name} onChange={setIcon} />
-							<Input
-								id="workspace-name"
-								value={name}
-								onChange={(e) => setName(e.target.value)}
-								placeholder="My Project"
-								autoFocus
-								className="flex-1"
-							/>
+				{confirmInit ? (
+					<div className="space-y-4">
+						<div className="flex gap-3 rounded-md border border-amber-500/50 bg-amber-500/10 p-3">
+							<AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+							<div className="space-y-1 text-sm">
+								<p className="font-medium">Folder does not exist</p>
+								<p className="text-muted-foreground">
+									<code className="text-xs">{folderPath.trim()}</code> does not exist. Do you want to create
+									it and initialize a git repository?
+								</p>
+							</div>
 						</div>
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor="workspace-path">Folder Path</Label>
-						<div className="flex gap-2">
-							<Input
-								id="workspace-path"
-								value={folderPath}
-								onChange={(e) => setFolderPath(e.target.value)}
-								placeholder="/home/user/projects/my-project"
-								className="flex-1"
-							/>
-							<Button
-								type="button"
-								variant="outline"
-								size="icon"
-								onClick={() => browse(folderPath || undefined)}
-								disabled={browseLoading}
-							>
-								<FolderOpen className="h-4 w-4" />
+						<DialogFooter>
+							<Button type="button" variant="outline" onClick={() => setConfirmInit(false)} disabled={submitting}>
+								Back
 							</Button>
-						</div>
+							<Button type="button" onClick={handleConfirmInit} disabled={submitting}>
+								{submitting ? "Creating…" : "Create folder & init repo"}
+							</Button>
+						</DialogFooter>
 					</div>
-
-					{isLinearConfigured && (
-						<LinearTeamSelect value={linearTeamId} onChange={setLinearTeamId} />
-					)}
-
-					{browsing && browseData && (
-						<div className="rounded-md border">
-							<div className="flex items-center gap-2 border-b bg-muted/50 px-3 py-2">
-								{browseData.parent && (
-									<Button
-										type="button"
-										variant="ghost"
-										size="icon"
-										className="h-6 w-6"
-										onClick={() => browse(browseData.parent!)}
-										disabled={browseLoading}
-									>
-										<ChevronUp className="h-4 w-4" />
-									</Button>
-								)}
-								<span className="truncate text-sm font-mono">{browseData.path}</span>
+				) : (
+					<form onSubmit={handleSubmit} className="space-y-4">
+						<div className="space-y-2">
+							<Label htmlFor="workspace-name">Name</Label>
+							<div className="flex items-center gap-2">
+								<IconPicker icon={icon} fallback={name} onChange={setIcon} />
+								<Input
+									id="workspace-name"
+									value={name}
+									onChange={(e) => setName(e.target.value)}
+									placeholder="My Project"
+									autoFocus
+									className="flex-1"
+								/>
 							</div>
-							<div className="max-h-100 overflow-y-auto">
-								{browseData.directories.length === 0 ? (
-									<p className="px-3 py-4 text-sm text-muted-foreground text-center">
-										No subdirectories
-									</p>
-								) : (
-									browseData.directories.map((dir) => (
-										<button
-											key={dir.path}
-											type="button"
-											className="flex w-full items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted/50 text-left"
-											onClick={() => browse(dir.path)}
-										>
-											<Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
-											{dir.name}
-										</button>
-									))
-								)}
-							</div>
-							<div className="flex justify-end border-t px-3 py-2">
-								<Button type="button" size="sm" onClick={() => selectFolder(browseData.path)}>
-									Select this folder
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="workspace-path">Folder Path</Label>
+							<div className="flex gap-2">
+								<Input
+									id="workspace-path"
+									value={folderPath}
+									onChange={(e) => setFolderPath(e.target.value)}
+									placeholder="/home/user/projects/my-project"
+									className="flex-1"
+								/>
+								<Button
+									type="button"
+									variant="outline"
+									size="icon"
+									onClick={() => browse(folderPath || undefined)}
+									disabled={browseLoading}
+								>
+									<FolderOpen className="h-4 w-4" />
 								</Button>
 							</div>
 						</div>
-					)}
 
-					<DialogFooter>
-						<Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-							Cancel
-						</Button>
-						<Button type="submit" disabled={!name.trim() || !folderPath.trim()}>
-							Create
-						</Button>
-					</DialogFooter>
-				</form>
+						<div className="space-y-1">
+							<div className="flex items-center gap-2">
+								<Checkbox
+									id="nested-repos"
+									checked={nestedRepos}
+									onCheckedChange={(checked) => setMultiRepo(checked === true)}
+								/>
+								<Label htmlFor="nested-repos" className="font-normal">
+									Nested repos workspace
+								</Label>
+							</div>
+							<p className="text-xs text-muted-foreground ml-6">
+								Enable if this workspace folder contains nested git repositories. Ralph will commit in each sub-directory's repo separately.
+							</p>
+						</div>
+
+						{isLinearConfigured && (
+							<LinearTeamSelect value={linearTeamId} onChange={setLinearTeamId} />
+						)}
+
+						{browsing && browseData && (
+							<div className="rounded-md border">
+								<div className="flex items-center gap-2 border-b bg-muted/50 px-3 py-2">
+									{browseData.parent && (
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											className="h-6 w-6"
+											onClick={() => browse(browseData.parent!)}
+											disabled={browseLoading}
+										>
+											<ChevronUp className="h-4 w-4" />
+										</Button>
+									)}
+									<span className="truncate text-sm font-mono">{browseData.path}</span>
+								</div>
+								<div className="max-h-100 overflow-y-auto">
+									{browseData.directories.length === 0 ? (
+										<p className="px-3 py-4 text-sm text-muted-foreground text-center">
+											No subdirectories
+										</p>
+									) : (
+										browseData.directories.map((dir) => (
+											<button
+												key={dir.path}
+												type="button"
+												className="flex w-full items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted/50 text-left"
+												onClick={() => browse(dir.path)}
+											>
+												<Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
+												{dir.name}
+											</button>
+										))
+									)}
+								</div>
+								<div className="flex justify-end border-t px-3 py-2">
+									<Button type="button" size="sm" onClick={() => selectFolder(browseData.path)}>
+										Select this folder
+									</Button>
+								</div>
+							</div>
+						)}
+
+						<DialogFooter>
+							<Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+								Cancel
+							</Button>
+							<Button type="submit" disabled={!name.trim() || !folderPath.trim() || submitting}>
+								{submitting ? "Checking…" : "Create"}
+							</Button>
+						</DialogFooter>
+					</form>
+				)}
 			</DialogContent>
 		</Dialog>
 	);

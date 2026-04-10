@@ -17,7 +17,7 @@ export function TerminalView({ sessionId }: TerminalViewProps) {
 	const fitAddonRef = useRef<FitAddon | null>(null);
 	const terminalRef = useRef<Terminal | null>(null);
 	const [terminal, setTerminal] = useState<Terminal | null>(null);
-	const wsRef = useTerminalSocket(terminal, sessionId);
+	const { wsRef, status } = useTerminalSocket(terminal, sessionId);
 	const themeKey = useStore(selectTerminalTheme);
 
 	const sendResize = useCallback(() => {
@@ -89,6 +89,14 @@ export function TerminalView({ sessionId }: TerminalViewProps) {
 			term.options.theme = getTerminalTheme(themeKey);
 		}
 	}, [themeKey]);
+
+	if (status === "unavailable") {
+		return (
+			<div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">
+				Terminal session unavailable — the tmux session may have been destroyed.
+			</div>
+		);
+	}
 
 	return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;
 }

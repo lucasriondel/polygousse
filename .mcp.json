@@ -3,6 +3,10 @@
     "polygousse": {
       "command": "bun",
       "args": ["run", "./packages/mcp-server/src/index.ts"]
+    },
+    "sqlite": {
+      "command": "npx",
+      "args": ["-y", "mcp-sqlite", "./data/polygousse.db"]
     }
   }
 }

@@ -30,8 +30,8 @@ I hope you will find it as useful as I do !
 
 ```
 ┌─────────────┐     WebSocket      ┌──────────────┐
-│   Web UI    │◄──────────────────►│   API Server  │
-│  (React 19) │   (events + RPC)   │  (Fastify 5)  │
+│   Web UI    │◄──────────────────►│   API Server │
+│  (React 19) │   (events + RPC)   │  (Fastify 5) │
 └─────────────┘                    └──────┬───────┘
                                           │
                     ┌─────────────────────┼─────────────────────┐
@@ -122,6 +122,35 @@ This starts both the API server and web UI via Turborepo:
 ### 6. Create a workspace
 
 Open the web UI and create a workspace pointing to a local project directory. Tasks you create in that workspace will run Claude Code sessions in that directory.
+
+### 7. Add the MCP server to Claude Code (optional)
+
+The Polygousse MCP server exposes workspace and task management as tools, so Claude can list workspaces, list/create/update tasks directly from any Claude Code session.
+
+Add this to your Claude Code MCP configuration (`.mcp.json` at the project root or `~/.claude/settings.json` globally):
+
+```json
+{
+  "mcpServers": {
+    "polygousse": {
+      "command": "bun",
+      "args": ["/path/to/polygousse/packages/mcp-server/src/index.ts"],
+      "type": "stdio"
+    }
+  }
+}
+```
+
+Replace `/path/to/polygousse` with the absolute path to your Polygousse clone. Once configured, the following tools become available in Claude Code:
+
+| Tool               | Description                          |
+| ------------------ | ------------------------------------ |
+| `list_workspaces`  | List all available workspaces        |
+| `list_tasks`       | List all tasks in a workspace        |
+| `create_task`      | Create a new task in a workspace     |
+| `update_task`      | Update a task's title, description, or status |
+
+> **Note:** The MCP server connects to the API when it's running (for real-time WebSocket updates in the UI) and falls back to direct SQLite access when the API is down.
 
 ## ⚙️ Configuration
 

@@ -27,6 +27,8 @@ const ALLOWED_ORIGINS = new Set([
 
 // Track all active PTY processes for cleanup on shutdown
 const activePtyProcesses = new Set<pty.IPty>();
+// Track one PTY per session to prevent duplicate attaches
+const sessionPty = new Map<string, { pty: pty.IPty; clients: Set<WebSocket> }>();
 
 const server = createServer((_req, res) => {
 	res.writeHead(200, { "Content-Type": "application/json" });
@@ -61,13 +63,36 @@ server.on("upgrade", (req, socket, head) => {
 function cleanupPty(ptyProcess: pty.IPty) {
 	activePtyProcesses.delete(ptyProcess);
 	try {
-		ptyProcess.kill();
+		// tmux attach-session ignores SIGHUP (node-pty default), so use SIGKILL.
+		// Kill the process group (-pid) to ensure child processes are also cleaned up.
+		process.kill(-ptyProcess.pid, "SIGKILL");
 	} catch {
 		// Already dead — that's fine
 	}
 }
 
-function handleTerminalConnection(ws: WebSocket, sessionId: string) {
+function getOrCreatePty(sessionId: string): { pty: pty.IPty; clients: Set<WebSocket> } | null {
+	const existing = sessionPty.get(sessionId);
+	if (existing) {
+		// Verify the PTY process is still alive — a stale entry can linger if
+		// onExit from a previous PTY deleted a newer entry (race condition).
+		try {
+			process.kill(existing.pty.pid, 0); // signal 0 = existence check
+			return existing;
+		} catch {
+			// Process is dead — remove the stale entry and create a fresh one
+			console.log(`Stale PTY entry for session ${sessionId} (pid ${existing.pty.pid}), recreating`);
+			sessionPty.delete(sessionId);
+			activePtyProcesses.delete(existing.pty);
+			for (const client of existing.clients) {
+				if (client.readyState === WebSocket.OPEN) {
+					client.close();
+				}
+			}
+			existing.clients.clear();
+		}
+	}
+
 	let ptyProcess: pty.IPty;
 	try {
 		ptyProcess = pty.spawn(TMUX_PATH, ["attach-session", "-t", sessionId], {
@@ -78,24 +103,58 @@ function handleTerminalConnection(ws: WebSocket, sessionId: string) {
 		});
 	} catch (err) {
 		console.error("Failed to spawn pty for session", sessionId, err);
-		ws.close();
-		return;
+		return null;
 	}
 
+	const entry = { pty: ptyProcess, clients: new Set<WebSocket>() };
 	activePtyProcesses.add(ptyProcess);
+	sessionPty.set(sessionId, entry);
 
 	ptyProcess.onData((data) => {
-		if (ws.readyState === WebSocket.OPEN) {
-			ws.send(data);
+		for (const client of entry.clients) {
+			if (client.readyState === WebSocket.OPEN) {
+				client.send(data);
+			}
 		}
 	});
 
 	ptyProcess.onExit(() => {
 		activePtyProcesses.delete(ptyProcess);
-		if (ws.readyState === WebSocket.OPEN) {
-			ws.close();
+		// Only remove from the map if this entry is still the current one —
+		// a replacement may have been created while this PTY was shutting down.
+		if (sessionPty.get(sessionId) === entry) {
+			sessionPty.delete(sessionId);
 		}
+		for (const client of entry.clients) {
+			if (client.readyState === WebSocket.OPEN) {
+				client.close();
+			}
+		}
+		entry.clients.clear();
 	});
+
+	return entry;
+}
+
+function removeClient(sessionId: string, ws: WebSocket) {
+	const entry = sessionPty.get(sessionId);
+	if (!entry) return;
+	entry.clients.delete(ws);
+	// If no more clients, tear down the PTY
+	if (entry.clients.size === 0) {
+		sessionPty.delete(sessionId);
+		cleanupPty(entry.pty);
+	}
+}
+
+function handleTerminalConnection(ws: WebSocket, sessionId: string) {
+	const entry = getOrCreatePty(sessionId);
+	if (!entry) {
+		ws.close();
+		return;
+	}
+
+	entry.clients.add(ws);
 
 	ws.on("message", (data) => {
 		const msg = data.toString();
@@ -105,7 +164,7 @@ function handleTerminalConnection(ws: WebSocket, sessionId: string) {
 			try {
 				const parsed = JSON.parse(msg);
 				if (parsed.type === "resize" && parsed.cols && parsed.rows) {
-					ptyProcess.resize(parsed.cols, parsed.rows);
+					entry.pty.resize(parsed.cols, parsed.rows);
 					return;
 				}
 			} catch {
@@ -113,16 +172,16 @@ function handleTerminalConnection(ws: WebSocket, sessionId: string) {
 			}
 		}
 
-		ptyProcess.write(msg);
+		entry.pty.write(msg);
 	});
 
 	ws.on("close", () => {
-		cleanupPty(ptyProcess);
+		removeClient(sessionId, ws);
 	});
 
 	ws.on("error", (err) => {
 		console.error("WebSocket error for session", sessionId, err);
-		cleanupPty(ptyProcess);
+		removeClient(sessionId, ws);
 	});
 }
 
@@ -132,12 +191,13 @@ function shutdown() {
 	console.log(`PTY bridge shutting down, killing ${activePtyProcesses.size} active PTY process(es)`);
 	for (const p of activePtyProcesses) {
 		try {
-			p.kill();
+			process.kill(-p.pid, "SIGKILL");
 		} catch {
 			// Already dead
 		}
 	}
 	activePtyProcesses.clear();
+	sessionPty.clear();
 	server.close();
 	process.exit(0);
 }

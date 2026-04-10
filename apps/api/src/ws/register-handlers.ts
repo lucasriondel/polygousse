@@ -1,13 +1,12 @@
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { readdir, readFile, mkdir, rmdir, unlink } from "node:fs/promises";
+import { readdir, readFile, mkdir, rmdir, stat, unlink } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 import {
 	clearHookEvents,
 	createAttachment,
-	getHookEventById,
 	createFolder,
 	createLinearTaskLink,
 	createTask,
@@ -33,18 +32,20 @@ import {
 	getCompletedTerminalSessions,
 	getFolderById,
 	getFoldersByWorkspaceId,
+	getHookEventById,
 	getLinearTaskLinkByTaskId,
 	getMaxFolderPosition,
 	getMaxTaskPosition,
 	getMaxTaskPositionInFolder,
 	getRecentHookEvents,
 	getRunningRalphSessions,
-	getSetting,
 	getSessionEventsByTerminalId,
+	getSetting,
 	getTaskById,
 	getTaskBySessionId,
 	getTasksByWorkspaceId,
 	getTerminalSessionById,
+	getWaitingClaudeSessionsWithTask,
 	getWorkspaceById,
 	reorderFolders,
 	reorderTasks,
@@ -54,8 +55,8 @@ import {
 	updateTaskPosition,
 	updateWorkspace,
 	upsertSetting,
-	getWaitingClaudeSessionsWithTask,
 } from "@polygousse/database";
+import { debugSettings, debugTaskLifecycle } from "../debug.js";
 import { getOrchestratorState } from "../orchestrator.js";
 import { orchestrateCommitAndComplete } from "../orchestrators/commit-complete.js";
 import { orchestrateExtractPrdAndStartRalph } from "../orchestrators/extract-prd-ralph.js";
@@ -74,11 +75,16 @@ import { enrichTerminal, enrichTerminals } from "../services/session-enricher.js
 import { StartTaskError, startTask } from "../services/start-task/index.js";
 import { teardownSession } from "../services/task-completion.js";
 import { tmuxSendKeys } from "../tmux.js";
-import { debugSettings, debugTaskLifecycle } from "../debug.js";
 import { registerHandler } from "./handlers.js";
 import { broadcast } from "./index.js";
 
 const execFileAsync = promisify(execFile);
+
+/** Expand leading `~` or `~user` to the home directory */
+function resolvePath(p: string): string {
+	if (p.startsWith("~/") || p === "~") return p.replace("~", homedir());
+	return p;
+}
 
 const ATTACHMENTS_DIR = resolve(import.meta.dir, "../../../../data/attachments");
 
@@ -98,18 +104,33 @@ registerHandler("hydrate", () => ({
 // ── Workspaces ──────────────────────────────────────────────────────
 
 registerHandler("workspace:create", (payload) => {
-	const { name, folder_path, icon, linear_team_id, linear_project_ids } = payload;
+	const { name, folder_path, icon, linear_team_id, linear_project_ids, nested_repos } = payload;
 	const projectIdsJson = linear_project_ids?.length ? JSON.stringify(linear_project_ids) : null;
-	const workspace = createWorkspace.get(name, folder_path, icon ?? null, linear_team_id ?? null, projectIdsJson);
+	const workspace = createWorkspace.get(
+		name,
+		resolvePath(folder_path),
+		icon ?? null,
+		linear_team_id ?? null,
+		projectIdsJson,
+		nested_repos ? 1 : 0,
+	);
 	if (!workspace) throw new Error("Failed to create workspace");
 	broadcast({ type: "workspace:created", workspace });
 	return workspace;
 });
 
 registerHandler("workspace:update", (payload) => {
-	const { id, name, folder_path, icon, linear_team_id, linear_project_ids } = payload;
+	const { id, name, folder_path, icon, linear_team_id, linear_project_ids, nested_repos } = payload;
 	const projectIdsJson = linear_project_ids?.length ? JSON.stringify(linear_project_ids) : null;
-	const workspace = updateWorkspace.get(name, folder_path, icon ?? null, linear_team_id ?? null, projectIdsJson, id);
+	const workspace = updateWorkspace.get(
+		name,
+		resolvePath(folder_path),
+		icon ?? null,
+		linear_team_id ?? null,
+		projectIdsJson,
+		nested_repos ? 1 : 0,
+		id,
+	);
 	if (!workspace) throw new Error("Workspace not found");
 	broadcast({ type: "workspace:updated", workspace });
 	return workspace;
@@ -122,6 +143,29 @@ registerHandler("workspace:delete", (payload) => {
 	broadcast({ type: "workspace:deleted", id: payload.id });
 });
 
+registerHandler("workspace:check-path", async (payload) => {
+	const folderPath = resolvePath(payload.folder_path);
+	let exists = false;
+	try {
+		const s = await stat(folderPath);
+		exists = s.isDirectory();
+	} catch {}
+	let is_git = false;
+	if (exists) {
+		try {
+			await execFileAsync("git", ["rev-parse", "--git-dir"], { cwd: folderPath });
+			is_git = true;
+		} catch {}
+	}
+	return { exists, is_git };
+});
+
+registerHandler("workspace:init-repo", async (payload) => {
+	const folderPath = resolvePath(payload.folder_path);
+	await mkdir(folderPath, { recursive: true });
+	await execFileAsync("git", ["init", "-b", "main"], { cwd: folderPath });
+});
+
 registerHandler("worktree:create", async (payload) => {
 	const { workspaceId, branchName } = payload;
 
@@ -130,26 +174,48 @@ registerHandler("worktree:create", async (payload) => {
 
 	const sanitized = branchName
 		.toLowerCase()
-		.replace(/[^a-z0-9-]/g, "-")
+		.replace(/[^a-z0-9/-]/g, "-")
 		.replace(/-+/g, "-")
-		.replace(/^-|-$/g, "");
+		.replace(/\/+/g, "/")
+		.replace(/^[-/]+|[-/]+$/g, "");
 
 	if (!sanitized) throw new Error("Branch name must contain at least one alphanumeric character");
 
-	const parentDir = dirname(workspace.folder_path);
-	const parentBase = basename(workspace.folder_path);
+	const folderPath = resolvePath(workspace.folder_path);
+
+	// Pre-flight: ensure the workspace directory exists
+	try {
+		const s = await stat(folderPath);
+		if (!s.isDirectory()) throw new Error(`Workspace path is not a directory: ${folderPath}`);
+	} catch (err: unknown) {
+		if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+			throw new Error(`Workspace directory does not exist: ${folderPath}`);
+		}
+		throw err;
+	}
+
+	// Pre-flight: ensure it's a git repository
+	try {
+		await execFileAsync("git", ["rev-parse", "--git-dir"], { cwd: folderPath });
+	} catch {
+		throw new Error(`Workspace is not a git repository: ${folderPath}`);
+	}
+
+	const parentDir = dirname(folderPath);
+	const parentBase = basename(folderPath);
 	const worktreePath = `${parentDir}/${parentBase}-${sanitized}`;
 
 	try {
 		await execFileAsync("git", ["worktree", "add", worktreePath, "-b", sanitized], {
-			cwd: workspace.folder_path,
+			cwd: folderPath,
 		});
 	} catch (err: unknown) {
 		const stderr =
 			err instanceof Error && "stderr" in err
-				? String((err as { stderr: unknown }).stderr)
-				: String(err);
-		throw new Error(`git worktree add failed: ${stderr}`);
+				? String((err as { stderr: unknown }).stderr).trim()
+				: "";
+		const detail = stderr || (err instanceof Error ? err.message : String(err));
+		throw new Error(`git worktree add failed: ${detail}`);
 	}
 
 	return { path: worktreePath, branch: sanitized };
