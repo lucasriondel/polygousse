@@ -43,6 +43,24 @@ export function TerminalView({ sessionId }: TerminalViewProps) {
 			fontFamily: "'JetBrains Mono', monospace",
 			fontSize: 14,
 			theme: getTerminalTheme(themeKey),
+			// tmux enables mouse tracking, which eats drag events. Hold Option (⌥) on
+			// Mac — or Shift on other platforms — to force a local selection.
+			macOptionClickForcesSelection: true,
+		});
+
+		// Map Shift+Enter to LF (\n) so Claude Code inside the tmux session treats it
+		// as chat:newline (ctrl+j) instead of submit (\r).
+		term.attachCustomKeyEventHandler((ev) => {
+			if (ev.type === "keydown" && ev.key === "Enter" && ev.shiftKey) {
+				const ws = wsRef.current;
+				if (ws?.readyState === WebSocket.OPEN) {
+					ws.send("\n");
+				}
+				ev.preventDefault();
+				ev.stopPropagation();
+				return false;
+			}
+			return true;
 		});
 
 		const fitAddon = new FitAddon();
