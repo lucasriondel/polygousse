@@ -60,6 +60,7 @@ export function seedWorkspace(
 		null,
 		overrides.linearTeamId ?? null,
 		overrides.linearProjectIds ?? null,
+		0,
 	);
 	if (!ws) throw new Error("Failed to seed workspace");
 	return ws;

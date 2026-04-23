@@ -84,8 +84,15 @@ export async function initializeBranchContext(
 	const { branchStrategy, branchPrefix } = config.git;
 
 	if (branchStrategy === "none") {
+		// No branch management needed — don't require a git repo
+		let originalBranch = "";
+		try {
+			originalBranch = await getCurrentBranch();
+		} catch {
+			// Not in a git repo, that's fine for "none" strategy
+		}
 		return {
-			originalBranch: await getCurrentBranch(),
+			originalBranch,
 			workingBranch: null,
 		};
 	}
@@ -186,10 +193,15 @@ export async function cleanupBranchContext(
  * Returns error message if validation fails, null if OK
  */
 export async function validateGitState(config: RalphConfig): Promise<string | null> {
-	const { branchStrategy } = config.git;
+	const { branchStrategy, nestedRepos } = config.git;
 
 	if (branchStrategy === "none") {
 		return null;
+	}
+
+	// Nested-repos workspaces don't have a git repo at root - branch strategies aren't supported
+	if (nestedRepos) {
+		return "Branch strategies are not supported with --nested-repos. Use --branch-strategy none.";
 	}
 
 	// Check if we're in a git repo

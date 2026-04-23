@@ -37,7 +37,7 @@ describe("test lifecycle helpers", () => {
 		cleanupDb();
 
 		// Seed some data
-		createWorkspace.run("Test WS", "/tmp/test", null, null, null);
+		createWorkspace.run("Test WS", "/tmp/test", null, null, null, 0);
 		const before = getAllWorkspaces.all();
 		expect(before.length).toBe(1);
 
@@ -50,7 +50,7 @@ describe("test lifecycle helpers", () => {
 
 	test("cleanupDb handles FK-constrained data", () => {
 		// Create workspace, then a task that references it
-		createWorkspace.run("WS", "/tmp/ws", null, null, null);
+		createWorkspace.run("WS", "/tmp/ws", null, null, null, 0);
 		const ws = getAllWorkspaces.all()[0]!;
 		db.exec(
 			`INSERT INTO tasks (workspace_id, title, status, position) VALUES (${ws.id}, 'Task 1', 'todo', 0)`,

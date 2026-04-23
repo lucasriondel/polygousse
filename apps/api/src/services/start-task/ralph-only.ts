@@ -22,7 +22,7 @@ interface RalphOnlyParams {
 }
 
 export async function startRalphOnly(params: RalphOnlyParams) {
-	const { task, terminalSessionId, cwd, maxIterations, log } = params;
+	const { task, workspace, terminalSessionId, cwd, maxIterations, log } = params;
 	debugTaskLifecycle(`ralph-only start: task #${task.id}, maxIterations=${maxIterations}`, terminalSessionId);
 
 	const ralphSessionId = crypto.randomUUID();
@@ -53,7 +53,7 @@ export async function startRalphOnly(params: RalphOnlyParams) {
 	);
 
 	// Send the ralph command to tmux
-	const ralphCommand = `ralph --iterations ${maxIterations}`;
+	const ralphCommand = `ralph --iterations ${maxIterations}${workspace.nested_repos ? " --nested-repos" : ""}`;
 	try {
 		await tmuxSendKeys(terminalSessionId, ralphCommand);
 	} catch (err) {

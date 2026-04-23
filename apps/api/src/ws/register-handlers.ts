@@ -104,7 +104,7 @@ registerHandler("hydrate", () => ({
 // ── Workspaces ──────────────────────────────────────────────────────
 
 registerHandler("workspace:create", (payload) => {
-	const { name, folder_path, icon, linear_team_id, linear_project_ids } = payload;
+	const { name, folder_path, icon, linear_team_id, linear_project_ids, nested_repos } = payload;
 	const projectIdsJson = linear_project_ids?.length ? JSON.stringify(linear_project_ids) : null;
 	const workspace = createWorkspace.get(
 		name,
@@ -112,6 +112,7 @@ registerHandler("workspace:create", (payload) => {
 		icon ?? null,
 		linear_team_id ?? null,
 		projectIdsJson,
+		nested_repos ? 1 : 0,
 	);
 	if (!workspace) throw new Error("Failed to create workspace");
 	broadcast({ type: "workspace:created", workspace });
@@ -119,7 +120,7 @@ registerHandler("workspace:create", (payload) => {
 });
 
 registerHandler("workspace:update", (payload) => {
-	const { id, name, folder_path, icon, linear_team_id, linear_project_ids } = payload;
+	const { id, name, folder_path, icon, linear_team_id, linear_project_ids, nested_repos } = payload;
 	const projectIdsJson = linear_project_ids?.length ? JSON.stringify(linear_project_ids) : null;
 	const workspace = updateWorkspace.get(
 		name,
@@ -127,6 +128,7 @@ registerHandler("workspace:update", (payload) => {
 		icon ?? null,
 		linear_team_id ?? null,
 		projectIdsJson,
+		nested_repos ? 1 : 0,
 		id,
 	);
 	if (!workspace) throw new Error("Workspace not found");

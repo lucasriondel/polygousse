@@ -5,6 +5,7 @@ import { IconPicker } from "@/components/icon-picker";
 import { LinearProjectSelect } from "@/components/linear-project-select";
 import { LinearTeamSelect } from "@/components/linear-team-select";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -35,6 +36,7 @@ export function WorkspaceSettingsPage({ workspace }: { workspace: Workspace }) {
 			return [];
 		}
 	});
+	const [nestedRepos, setMultiRepo] = useState(!!workspace.nested_repos);
 	const [saving, setSaving] = useState(false);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [deleting, setDeleting] = useState(false);
@@ -56,7 +58,8 @@ export function WorkspaceSettingsPage({ workspace }: { workspace: Workspace }) {
 		name.trim() !== workspace.name ||
 		icon !== workspace.icon ||
 		linearTeamId !== workspace.linear_team_id ||
-		projectIdsChanged;
+		projectIdsChanged ||
+		nestedRepos !== !!workspace.nested_repos;
 
 	function handleTeamChange(teamId: string | null) {
 		setLinearTeamId(teamId);
@@ -77,6 +80,7 @@ export function WorkspaceSettingsPage({ workspace }: { workspace: Workspace }) {
 				icon,
 				linearTeamId,
 				linearProjectIds.length > 0 ? linearProjectIds : null,
+				nestedRepos,
 			);
 		} finally {
 			setSaving(false);
@@ -121,6 +125,19 @@ export function WorkspaceSettingsPage({ workspace }: { workspace: Workspace }) {
 					<Label>Folder Path</Label>
 					<p className="text-sm text-muted-foreground font-mono">{workspace.folder_path}</p>
 				</div>
+				<div className="flex items-center gap-2">
+						<Checkbox
+							id="nested-repos"
+							checked={nestedRepos}
+							onCheckedChange={(checked) => setMultiRepo(checked === true)}
+						/>
+						<Label htmlFor="nested-repos" className="font-normal">
+							Nested repos workspace
+						</Label>
+					</div>
+					<p className="text-xs text-muted-foreground -mt-2">
+						Enable if this workspace folder contains nested git repositories. Ralph will commit in each sub-directory's repo separately.
+					</p>
 				{isLinearConfigured && (
 					<>
 						<LinearTeamSelect value={linearTeamId} onChange={handleTeamChange} />

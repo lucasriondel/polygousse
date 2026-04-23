@@ -46,6 +46,7 @@ program
 	.option("--branch-strategy <type>", "Branch strategy: none|per-task|single", "none")
 	.option("--branch-prefix <prefix>", "Branch prefix", "ralph/")
 	.option("--return-branch", "Return to original branch after each task")
+	.option("--nested-repos", "Nested-repos workspace: commit in each sub-directory's git repo separately")
 
 	// Lifecycle hooks
 	.option("--on-loop-start <cmd>", "Shell command to run before the loop starts")
